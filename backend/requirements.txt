@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+pymongo
+langchain
+langchain-openai
+langchain-mongodb
+deepeval
+openai
+python-multipart
+pydantic-settings
+pypdf
+python-docx
+pandas
+openpyxl
+python-dotenv
+aiofiles
+pydub

@@ -72,7 +72,9 @@ def get_rag_response(query_text: str):
     cache_collection.insert_one({
         "query": query_text,
         "response": response,
-        "embedding": embeddings.embed_query(query_text) # This is manual if not using MongoDBAtlasVectorSearch.add_texts
+        "tokens": tokens,
+        "timestamp": time.time(),
+        "embedding": embeddings.embed_query(query_text)
     })
     
     # Log to MongoDB

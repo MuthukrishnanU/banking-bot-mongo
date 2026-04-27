@@ -210,6 +210,15 @@ export default function Home() {
             </div>
             <h2 className="font-bold text-lg">Chat Terminal</h2>
           </div>
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <button 
+              onClick={() => window.open('/tracker', '_blank')}
+              className="flex items-center gap-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-5 py-2 rounded-full border border-indigo-500/20 transition-all font-semibold text-sm"
+            >
+              <Activity className="w-4 h-4" />
+              Token Usage Tracker
+            </button>
+          </div>
           <div className="flex items-center gap-6 text-sm text-slate-400">
             <span className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

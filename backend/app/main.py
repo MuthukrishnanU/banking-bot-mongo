@@ -71,6 +71,21 @@ async def query_bot(
         **response_data
     }
 
+@app.get("/usage")
+async def get_usage():
+    try:
+        cache_collection = get_collection("semantic_cache")
+        # Fetch all records, exclude embedding for performance
+        usage_data = list(cache_collection.find({}, {"embedding": 0}))
+        
+        # Convert ObjectId to string for JSON serialization
+        for item in usage_data:
+            item["_id"] = str(item["_id"])
+            
+        return usage_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

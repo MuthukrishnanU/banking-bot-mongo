@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     DB_NAME: str = os.getenv("DB_NAME", "bankingPolicyDB")
     COLLECTION_FILES: str = os.getenv("COLLECTION_FILES", "bankingPolicyDocs")
     COLLECTION_METRICS: str = os.getenv("COLLECTION_METRICS", "bankingPolicyMetricsValues")
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "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")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "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")
     VECTOR_INDEX_NAME: str = os.getenv("VECTOR_INDEX_NAME", "bankingPolicyVectorDB")
 
 settings = Settings()

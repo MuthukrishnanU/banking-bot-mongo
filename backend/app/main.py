@@ -21,8 +21,20 @@ app.add_middleware(
 @app.get("/files")
 async def list_files():
     collection = get_collection(settings.COLLECTION_FILES)
-    files = collection.find({}, {"docName": 1, "_id": 1})
-    return [{"id": str(f["_id"]), "name": f["docName"]} for f in files]
+    print("Querying MongoDB for files...", flush=True)
+    # The user's image shows docName is inside a 'docs' array
+    files = collection.find({}, {"docs.docName": 1, "_id": 1})
+    print("Query finished.", flush=True)
+
+    
+    file_list = []
+    for f in files:
+        doc_name = "Unknown"
+        if "docs" in f and isinstance(f["docs"], list) and len(f["docs"]) > 0:
+            doc_name = f["docs"][0].get("docName", "Unknown")
+        file_list.append({"id": str(f["_id"]), "name": doc_name})
+        
+    return file_list
 
 @app.post("/ingest/{file_id}")
 async def run_ingestion(file_id: str):

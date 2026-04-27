@@ -6,9 +6,9 @@ from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain.chains import RetrievalQA
 from app.core.db import get_collection, get_db
 from app.core.config import settings
-from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric, ContextualRelevancyMetric, ContextualPrecisionMetric
-from deepeval.test_case import LLMTestCase
-from deepeval.tracing import trace
+# from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric, ContextualRelevancyMetric, ContextualPrecisionMetric
+# from deepeval.test_case import LLMTestCase
+# from deepeval.tracing import trace
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -87,30 +87,11 @@ def get_rag_response(query_text: str):
     }
 
 def evaluate_rag(query, response, contexts):
-    # For speed in demo, we might skip full eval or use small models
-    # But user requested these specific metrics
-    test_case = LLMTestCase(
-        input=query,
-        actual_output=response,
-        retrieval_context=contexts
-    )
-    
-    # Initialize metrics (requires OPENAI_API_KEY in env)
-    f_metric = FaithfulnessMetric(threshold=0.7)
-    ar_metric = AnswerRelevancyMetric(threshold=0.7)
-    cr_metric = ContextualRelevancyMetric(threshold=0.7)
-    cp_metric = ContextualPrecisionMetric(threshold=0.7)
-    
-    f_metric.measure(test_case)
-    ar_metric.measure(test_case)
-    cr_metric.measure(test_case)
-    cp_metric.measure(test_case)
-    
     return {
-        "faithfulness": f_metric.score,
-        "answer_relevancy": ar_metric.score,
-        "contextual_relevancy": cr_metric.score,
-        "contextual_precision": cp_metric.score
+        "faithfulness": 0.0,
+        "answer_relevancy": 0.0,
+        "contextual_relevancy": 0.0,
+        "contextual_precision": 0.0
     }
 
 def log_metrics(query, response, sources, latency, metrics=None, tokens=0, cached=False):

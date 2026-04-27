@@ -1,5 +1,6 @@
 import os
 import tempfile
+import base64
 from langchain_community.document_loaders import (
     PyPDFLoader,
     Docx2txtLoader,
@@ -38,8 +39,24 @@ def ingest_file(file_id: str):
     if not file_doc:
         raise Exception("File not found in database")
     
-    filename = file_doc.get("filename")
-    file_data = file_doc.get("data") # Binary data
+    # The user's image shows docName and docStr are inside a 'docs' array
+    if "docs" not in file_doc or not file_doc["docs"]:
+        raise Exception("No documents found in the file record")
+        
+    doc = file_doc["docs"][0]
+    filename = doc.get("docName", "unknown.pdf")
+    doc_str = doc.get("docStr", "")
+    
+    try:
+        file_data = base64.b64decode(doc_str)
+    except Exception as e:
+        raise Exception(f"Failed to decode document data: {str(e)}")
+
+    # Add extension if missing from filename for loader selection
+    if "." not in filename:
+        doc_type = doc.get("docType", "pdf").lower()
+        filename = f"{filename}.{doc_type}"
+
     ext = os.path.splitext(filename)[1].lower()
     
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_file:

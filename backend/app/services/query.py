@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_mongodb import MongoDBAtlasVectorSearch
-from langchain.chains import RetrievalQA
+from langchain_classic.chains import RetrievalQA
 from app.core.db import get_collection, get_db
 from app.core.config import settings
 # from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric, ContextualRelevancyMetric, ContextualPrecisionMetric

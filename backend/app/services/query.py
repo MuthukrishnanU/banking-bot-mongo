@@ -36,10 +36,21 @@ def get_rag_response(query_text: str, user_id: str = None):
     
     cache_results = cache_store.similarity_search_with_score(query_text, k=1)
     if cache_results and cache_results[0][1] > 0.95: # High similarity threshold
-        response = cache_results[0][0].metadata.get("response")
+        doc = cache_results[0][0]
+        response = doc.page_content # In MongoDBAtlasVectorSearch, page_content is the text
+        # If response was stored in metadata instead:
+        if not response or response == query_text:
+            response = doc.metadata.get("response")
+            
         latency = time.time() - start_time
+        # Try to get _id from metadata or query again
+        cache_id = str(doc.metadata.get("_id"))
+        if not cache_id or cache_id == "None":
+            cached_doc = cache_collection.find_one({"query": query_text})
+            cache_id = str(cached_doc["_id"]) if cached_doc else None
+
         log_metrics(query_text, response, [], latency, metrics=None, tokens=0, cached=True, user_id=user_id)
-        return {"response": response, "sources": [], "latency": latency, "cached": True}
+        return {"response": response, "sources": [], "latency": latency, "cached": True, "query_id": cache_id}
 
     # 2. RAG retrieval
     vector_store = MongoDBAtlasVectorSearch(
@@ -69,14 +80,16 @@ def get_rag_response(query_text: str, user_id: str = None):
         metrics = evaluate_rag(query_text, response, source_documents)
     
     # Update Semantic Cache
-    cache_collection.insert_one({
+    cache_entry = {
         "query": query_text,
         "response": response,
         "tokens": tokens,
         "timestamp": time.time(),
         "userId": user_id or "NA",
         "embedding": embeddings.embed_query(query_text)
-    })
+    }
+    result = cache_collection.insert_one(cache_entry)
+    cache_id = str(result.inserted_id)
     
     # Log to MongoDB
     log_metrics(query_text, response, source_documents, latency, metrics, tokens=tokens, user_id=user_id)
@@ -86,7 +99,8 @@ def get_rag_response(query_text: str, user_id: str = None):
         "sources": source_documents,
         "latency": latency,
         "metrics": metrics,
-        "tokens": tokens
+        "tokens": tokens,
+        "query_id": cache_id
     }
 
 def evaluate_rag(query, response, contexts):

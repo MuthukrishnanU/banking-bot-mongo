@@ -15,7 +15,9 @@ import {
   Loader2,
   Volume2,
   User,
-  LogOut
+  LogOut,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 import axios from "axios";
 
@@ -30,7 +32,7 @@ export default function Home() {
   const [isIngesting, setIsIngesting] = useState(false);
   const [ingestStatus, setIngestStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [message, setMessage] = useState("");
-  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'bot'; text: string; metrics?: any }[]>([]);
+  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'bot'; text: string; metrics?: any; queryId?: string; feedback?: string }[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -99,12 +101,30 @@ export default function Home() {
       setChatHistory(prev => [...prev, {
         role: 'bot',
         text: response.data.response,
-        metrics: response.data.metrics
+        metrics: response.data.metrics,
+        queryId: response.data.query_id
       }]);
     } catch (error) {
       setChatHistory(prev => [...prev, { role: 'bot', text: "Sorry, I encountered an error processing your request." }]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFeedback = async (index: number, queryId: string, feedback: 'Positive' | 'Negative') => {
+    try {
+      await axios.post(`${API_BASE_URL}/feedback`, {
+        query_id: queryId,
+        feedback: feedback
+      });
+      
+      setChatHistory(prev => {
+        const newHistory = [...prev];
+        newHistory[index] = { ...newHistory[index], feedback };
+        return newHistory;
+      });
+    } catch (error) {
+      console.error("Error sending feedback:", error);
     }
   };
 
@@ -149,7 +169,8 @@ export default function Home() {
       setChatHistory(prev => [...prev, {
         role: 'bot',
         text: response.data.response,
-        metrics: response.data.metrics
+        metrics: response.data.metrics,
+        queryId: response.data.query_id
       }]);
     } catch (error) {
       setChatHistory(prev => [...prev, { role: 'bot', text: "Sorry, I couldn't transcribe or process the audio." }]);
@@ -299,6 +320,25 @@ export default function Home() {
                         <div className="h-full bg-emerald-500" style={{ width: `${(chat.metrics.answer_relevancy || Math.random().toFixed(2) || 0) * 100}%` }} />
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {chat.role === 'bot' && chat.queryId && (
+                  <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-4">
+                    <button
+                      onClick={() => handleFeedback(i, chat.queryId!, 'Positive')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${chat.feedback === 'Positive' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-900/50 text-slate-400 hover:text-emerald-400'}`}
+                    >
+                      <ThumbsUp className={`w-4 h-4 ${chat.feedback === 'Positive' ? 'fill-current' : ''}`} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Helpful</span>
+                    </button>
+                    <button
+                      onClick={() => handleFeedback(i, chat.queryId!, 'Negative')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${chat.feedback === 'Negative' ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-900/50 text-slate-400 hover:text-rose-400'}`}
+                    >
+                      <ThumbsDown className={`w-4 h-4 ${chat.feedback === 'Negative' ? 'fill-current' : ''}`} />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Unhelpful</span>
+                    </button>
                   </div>
                 )}
               </div>

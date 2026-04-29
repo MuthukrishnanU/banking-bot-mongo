@@ -50,6 +50,10 @@ class LoginRequest(BaseModel):
     userId: str
     password: str
 
+class FeedbackRequest(BaseModel):
+    query_id: str
+    feedback: str
+
 @app.post("/login")
 async def login(request: LoginRequest):
     collection = get_collection(settings.COLLECTION_USERS)
@@ -88,6 +92,21 @@ async def query_bot(
         "query": query_text,
         **response_data
     }
+
+@app.post("/feedback")
+async def store_feedback(request: FeedbackRequest):
+    try:
+        cache_collection = get_collection("semantic_cache")
+        from bson import ObjectId
+        result = cache_collection.update_one(
+            {"_id": ObjectId(request.query_id)},
+            {"$set": {"feedback": request.feedback}}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Query ID not found")
+        return {"message": "Feedback stored successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/usage")
 async def get_usage():

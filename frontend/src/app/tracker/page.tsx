@@ -8,6 +8,7 @@ const API_BASE_URL = "http://localhost:8000";
 
 interface UsageData {
   _id: string;
+  userId?: string;
   query: string;
   tokens: number;
   timestamp: number;
@@ -82,6 +83,7 @@ export default function TrackerPage() {
               <thead>
                 <tr className="bg-white/5">
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">ID</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">User ID</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">Query</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">Timestamp</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5 text-right">Tokens Used</th>
@@ -90,7 +92,7 @@ export default function TrackerPage() {
               <tbody className="divide-y divide-white/5">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-20 text-center text-slate-500">
+                    <td colSpan={5} className="px-6 py-20 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                         <p className="font-medium">Loading usage analytics...</p>
@@ -99,7 +101,7 @@ export default function TrackerPage() {
                   </tr>
                 ) : usage.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-20 text-center text-slate-500">
+                    <td colSpan={5} className="px-6 py-20 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-3">
                         <Database className="w-8 h-8 opacity-20" />
                         <p className="font-medium">No usage data found in semantic cache.</p>
@@ -112,6 +114,9 @@ export default function TrackerPage() {
                       <tr key={item._id} className="hover:bg-white/[0.02] transition-colors group">
                         <td className="px-6 py-4 font-mono text-[10px] text-slate-500 group-hover:text-slate-400">
                           {item._id}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-slate-300">
+                          {item.userId || "NA"}
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-slate-200">
                           {item.query || "NA"}
@@ -127,7 +132,7 @@ export default function TrackerPage() {
                       </tr>
                     ))}
                     <tr className="bg-indigo-600/5 font-bold">
-                      <td colSpan={3} className="px-6 py-5 text-sm text-white uppercase tracking-wider">
+                      <td colSpan={4} className="px-6 py-5 text-sm text-white uppercase tracking-wider">
                         Total Tokens
                       </td>
                       <td className="px-6 py-5 text-lg text-right text-indigo-400">

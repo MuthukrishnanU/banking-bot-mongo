@@ -44,10 +44,28 @@ async def run_ingestion(file_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from pydantic import BaseModel
+
+class LoginRequest(BaseModel):
+    userId: str
+    password: str
+
+@app.post("/login")
+async def login(request: LoginRequest):
+    collection = get_collection(settings.COLLECTION_USERS)
+    user = collection.find_one({"userId": request.userId})
+    if not user:
+        raise HTTPException(status_code=401, detail="User ID doesn't exist.")
+    print(user)
+    if user.get("userPwd") != request.password:
+        raise HTTPException(status_code=401, detail="Password mismatch.")
+    return {"message": "Login successful", "userId": request.userId}
+
 @app.post("/query")
 async def query_bot(
     text: Optional[str] = Form(None),
-    audio: Optional[UploadFile] = File(None)
+    audio: Optional[UploadFile] = File(None),
+    user_id: Optional[str] = Form(None)
 ):
     query_text = text
     
@@ -65,7 +83,7 @@ async def query_bot(
     if not query_text:
         raise HTTPException(status_code=400, detail="No query provided")
     
-    response_data = get_rag_response(query_text)
+    response_data = get_rag_response(query_text, user_id=user_id)
     return {
         "query": query_text,
         **response_data

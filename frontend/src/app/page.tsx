@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Mic,
   Send,
@@ -12,7 +13,9 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  Volume2
+  Volume2,
+  User,
+  LogOut
 } from "lucide-react";
 import axios from "axios";
 
@@ -20,7 +23,9 @@ import axios from "axios";
 const API_BASE_URL = "http://localhost:8000";
 
 export default function Home() {
+  const router = useRouter();
   const [files, setFiles] = useState<{ id: string; name: string }[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string>("");
   const [isIngesting, setIsIngesting] = useState(false);
   const [ingestStatus, setIngestStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -34,12 +39,23 @@ export default function Home() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchFiles();
-  }, []);
+    const storedUserId = localStorage.getItem("userId");
+    if (!storedUserId) {
+      router.push("/login");
+    } else {
+      setUserId(storedUserId);
+      fetchFiles();
+    }
+  }, [router]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("userId");
+    router.push("/login");
+  };
 
   const fetchFiles = async () => {
     try {
@@ -76,6 +92,8 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append("text", userMessage);
+      if (userId) formData.append("user_id", userId);
+
       const response = await axios.post(`${API_BASE_URL}/query`, formData);
 
       setChatHistory(prev => [...prev, {
@@ -124,6 +142,8 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
+      if (userId) formData.append("user_id", userId);
+
       const response = await axios.post(`${API_BASE_URL}/query`, formData);
 
       setChatHistory(prev => [...prev, {
@@ -219,11 +239,28 @@ export default function Home() {
               Token Usage Tracker
             </button>
           </div>
-          <div className="flex items-center gap-6 text-sm text-slate-400">
-            <span className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Connected
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end gap-1">
+              {userId && (
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-300 bg-slate-800/50 px-3 py-1.5 rounded-full border border-white/5">
+                  <User className="w-3.5 h-3.5 text-indigo-400" />
+                  Hi {userId}
+                </div>
+              )}
+              <div className="flex items-center gap-6 text-sm text-slate-400">
+                <span className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Connected
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2.5 bg-slate-800/50 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 rounded-xl border border-white/5 hover:border-rose-500/20 transition-all group"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </button>
           </div>
         </header>
 
@@ -244,8 +281,8 @@ export default function Home() {
           {chatHistory.map((chat, i) => (
             <div key={i} className={`flex ${chat.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
               <div className={`max-w-[80%] rounded-3xl p-6 ${chat.role === 'user'
-                  ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/10'
-                  : 'bg-slate-800/80 text-slate-100 border border-white/5'
+                ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/10'
+                : 'bg-slate-800/80 text-slate-100 border border-white/5'
                 }`}>
                 <p className="leading-relaxed whitespace-pre-wrap">{chat.text}</p>
                 {chat.metrics && (

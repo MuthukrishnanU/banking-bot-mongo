@@ -22,7 +22,7 @@ def transcribe_audio(audio_file_path: str):
 
 from langchain_community.callbacks import get_openai_callback
 
-def get_rag_response(query_text: str):
+def get_rag_response(query_text: str, user_id: str = None):
     start_time = time.time()
     embeddings = OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
     
@@ -38,7 +38,7 @@ def get_rag_response(query_text: str):
     if cache_results and cache_results[0][1] > 0.95: # High similarity threshold
         response = cache_results[0][0].metadata.get("response")
         latency = time.time() - start_time
-        log_metrics(query_text, response, [], latency, tokens=0, cached=True)
+        log_metrics(query_text, response, [], latency, metrics=None, tokens=0, cached=True, user_id=user_id)
         return {"response": response, "sources": [], "latency": latency, "cached": True}
 
     # 2. RAG retrieval
@@ -74,11 +74,12 @@ def get_rag_response(query_text: str):
         "response": response,
         "tokens": tokens,
         "timestamp": time.time(),
+        "userId": user_id or "NA",
         "embedding": embeddings.embed_query(query_text)
     })
     
     # Log to MongoDB
-    log_metrics(query_text, response, source_documents, latency, metrics, tokens=tokens)
+    log_metrics(query_text, response, source_documents, latency, metrics, tokens=tokens, user_id=user_id)
     
     return {
         "response": response,
@@ -96,7 +97,7 @@ def evaluate_rag(query, response, contexts):
         "contextual_precision": 0.0
     }
 
-def log_metrics(query, response, sources, latency, metrics=None, tokens=0, cached=False):
+def log_metrics(query, response, sources, latency, metrics=None, tokens=0, cached=False, user_id=None):
     collection = get_collection(settings.COLLECTION_METRICS)
     log_entry = {
         "query": query,
@@ -106,6 +107,8 @@ def log_metrics(query, response, sources, latency, metrics=None, tokens=0, cache
         "token_usage": tokens,
         "metrics": metrics,
         "cached": cached,
+        "userId": user_id or "NA",
         "timestamp": time.time()
     }
     collection.insert_one(log_entry)
+

@@ -185,6 +185,7 @@ def get_rag_response(query_text: str, user_id: str = None, model_name: str = "gp
         "response": response,
         "tokens": tokens,
         "model": model_name,
+        "latency": latency,
         "temperature": temperature,
         "timestamp": time.time(),
         "userId": user_id or "NA",

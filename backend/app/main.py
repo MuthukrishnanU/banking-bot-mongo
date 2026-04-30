@@ -69,7 +69,9 @@ async def login(request: LoginRequest):
 async def query_bot(
     text: Optional[str] = Form(None),
     audio: Optional[UploadFile] = File(None),
-    user_id: Optional[str] = Form(None)
+    user_id: Optional[str] = Form(None),
+    llm: Optional[str] = Form("gpt-3.5-turbo"),
+    temperature: Optional[float] = Form(0.7)
 ):
     query_text = text
     
@@ -87,7 +89,7 @@ async def query_bot(
     if not query_text:
         raise HTTPException(status_code=400, detail="No query provided")
     
-    response_data = get_rag_response(query_text, user_id=user_id)
+    response_data = get_rag_response(query_text, user_id=user_id, model_name=llm, temperature=temperature)
     return {
         "query": query_text,
         **response_data

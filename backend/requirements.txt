@@ -15,3 +15,6 @@ openpyxl
 python-dotenv
 aiofiles
 pydub
+langchain-google-genai
+langchain-mistralai
+langchain-huggingface

@@ -24,11 +24,29 @@ import axios from "axios";
 // Constants
 const API_BASE_URL = "http://localhost:8000";
 
+const LLM_MODELS = [
+  { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
+  { value: "gpt-4o-mini", label: "GPT-4o Mini" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { value: "mistral-small-latest", label: "Mistral Small" },
+  { value: "meta-llama/Meta-Llama-3-8B-Instruct", label: "Llama 3 8B" }
+];
+
+const TEMPERATURE_OPTIONS = [
+  { value: "0", label: "0.0 – Deterministic" },
+  { value: "0.3", label: "0.3 – Focused" },
+  { value: "0.5", label: "0.5 – Balanced" },
+  { value: "0.7", label: "0.7 – Creative" },
+  { value: "1.0", label: "1.0 – Highly Creative" }
+];
+
 export default function Home() {
   const router = useRouter();
   const [files, setFiles] = useState<{ id: string; name: string }[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string>("");
+  const [selectedLlm, setSelectedLlm] = useState<string>("gpt-3.5-turbo");
+  const [selectedTemperature, setSelectedTemperature] = useState<string>("0.7");
   const [isIngesting, setIsIngesting] = useState(false);
   const [ingestStatus, setIngestStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [message, setMessage] = useState("");
@@ -95,6 +113,8 @@ export default function Home() {
       const formData = new FormData();
       formData.append("text", userMessage);
       if (userId) formData.append("user_id", userId);
+      formData.append("llm", selectedLlm);
+      formData.append("temperature", selectedTemperature);
 
       const response = await axios.post(`${API_BASE_URL}/query`, formData);
 
@@ -117,7 +137,7 @@ export default function Home() {
         query_id: queryId,
         feedback: feedback
       });
-      
+
       setChatHistory(prev => {
         const newHistory = [...prev];
         newHistory[index] = { ...newHistory[index], feedback };
@@ -163,6 +183,8 @@ export default function Home() {
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
       if (userId) formData.append("user_id", userId);
+      formData.append("llm", selectedLlm);
+      formData.append("temperature", selectedTemperature);
 
       const response = await axios.post(`${API_BASE_URL}/query`, formData);
 
@@ -250,8 +272,30 @@ export default function Home() {
               <MessageSquare className="w-5 h-5 text-indigo-400" />
             </div>
             <h2 className="font-bold text-lg">Chat Terminal</h2>
+
+            {/* LLM Model Dropdown */}
+            <select
+              value={selectedLlm}
+              onChange={(e) => setSelectedLlm(e.target.value)}
+              className="bg-slate-800 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer hover:border-indigo-500/40"
+            >
+              {LLM_MODELS.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+
+            {/* Temperature Dropdown */}
+            <select
+              value={selectedTemperature}
+              onChange={(e) => setSelectedTemperature(e.target.value)}
+              className="bg-slate-800 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none transition-all appearance-none cursor-pointer hover:border-indigo-500/40"
+            >
+              {TEMPERATURE_OPTIONS.map(t => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
           </div>
-          <div className="absolute left-1/2 -translate-x-1/2">
+          <div className="sampleClass">
             <button
               onClick={() => window.open('/tracker', '_blank')}
               className="flex items-center gap-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 px-5 py-2 rounded-full border border-indigo-500/20 transition-all font-semibold text-sm"

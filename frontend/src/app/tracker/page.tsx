@@ -13,6 +13,8 @@ interface UsageData {
   tokens: number;
   timestamp: number;
   feedback?: string;
+  model?: string;
+  temperature?: number;
 }
 
 export default function TrackerPage() {
@@ -87,6 +89,8 @@ export default function TrackerPage() {
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">User ID</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">Query</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">Timestamp</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5">Model</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5 text-right">Temp</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5 text-right">Tokens Used</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-white/5 text-right">Feedback</th>
                 </tr>
@@ -94,7 +98,7 @@ export default function TrackerPage() {
               <tbody className="divide-y divide-white/5">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-20 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                         <p className="font-medium">Loading usage analytics...</p>
@@ -103,7 +107,7 @@ export default function TrackerPage() {
                   </tr>
                 ) : usage.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center text-slate-500">
+                    <td colSpan={8} className="px-6 py-20 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-3">
                         <Database className="w-8 h-8 opacity-20" />
                         <p className="font-medium">No usage data found in semantic cache.</p>
@@ -128,6 +132,12 @@ export default function TrackerPage() {
                             ? new Date(item.timestamp * 1000).toLocaleString() 
                             : "NA"}
                         </td>
+                        <td className="px-6 py-4 text-sm text-slate-300">
+                          {item.model || "NA"}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-right text-slate-400">
+                          {item.temperature !== undefined && item.temperature !== null ? item.temperature : "NA"}
+                        </td>
                         <td className="px-6 py-4 text-sm font-bold text-right text-indigo-400">
                           {item.tokens !== undefined ? item.tokens.toLocaleString() : "NA"}
                         </td>
@@ -139,7 +149,7 @@ export default function TrackerPage() {
                       </tr>
                     ))}
                     <tr className="bg-indigo-600/5 font-bold">
-                      <td colSpan={5} className="px-6 py-5 text-sm text-white uppercase tracking-wider">
+                      <td colSpan={7} className="px-6 py-5 text-sm text-white uppercase tracking-wider">
                         Total Tokens
                       </td>
                       <td className="px-6 py-5 text-lg text-right text-indigo-400">

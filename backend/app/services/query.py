@@ -112,7 +112,8 @@ def get_rag_response(query_text: str, user_id: str = None, model_name: str = "gp
     cache_store = MongoDBAtlasVectorSearch(
         collection=cache_collection,
         embedding=embeddings,
-        index_name="cache_index"
+        index_name="cache_index",
+        text_key="query"
     )
     
     cache_results = cache_store.similarity_search_with_score(query_text, k=1)

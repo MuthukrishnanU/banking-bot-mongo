@@ -70,12 +70,21 @@ def ingest_file(file_id: str):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         chunks = text_splitter.split_documents(documents)
         
+        # Add file_id to metadata for de-duplication
+        for chunk in chunks:
+            chunk.metadata["file_id"] = file_id
+            chunk.metadata["filename"] = filename
+
         embeddings = OpenAIEmbeddings(openai_api_key=settings.OPENAI_API_KEY)
+        vector_collection = get_collection("vector_store")
+        
+        # Delete existing chunks for this file to prevent duplication/token bloat
+        vector_collection.delete_many({"metadata.file_id": file_id})
         
         vector_search = MongoDBAtlasVectorSearch.from_documents(
             documents=chunks,
             embedding=embeddings,
-            collection=get_collection("vector_store"),
+            collection=vector_collection,
             index_name=settings.VECTOR_INDEX_NAME
         )
         

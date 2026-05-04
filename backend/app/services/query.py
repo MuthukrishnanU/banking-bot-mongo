@@ -7,6 +7,7 @@ from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_classic.chains import RetrievalQA
 from app.core.db import get_collection, get_db
 from app.core.config import settings
+from langchain_core.prompts import PromptTemplate
 # from deepeval.metrics import FaithfulnessMetric, AnswerRelevancyMetric, ContextualRelevancyMetric, ContextualPrecisionMetric
 # from deepeval.test_case import LLMTestCase
 # from deepeval.tracing import trace
@@ -101,6 +102,18 @@ def transcribe_audio(audio_file_path: str):
         )
     return transcript.text
 
+# --- Custom Prompt for RAG ---
+RAG_PROMPT_TEMPLATE = """You are a professional banking assistant. Use the following pieces of context to answer the question at the end.
+If you don't know the answer or the context doesn't provide enough information, strictly say: "I don't have information about this in the ingested documents." 
+Do not try to make up an answer or use your own knowledge. Do not repeat the question.
+
+Context: {context}
+
+Question: {question}
+
+Helpful Answer:"""
+QA_CHAIN_PROMPT = PromptTemplate(input_variables=["context", "question"], template=RAG_PROMPT_TEMPLATE)
+
 from langchain_community.callbacks import get_openai_callback
 
 def get_rag_response(query_text: str, user_id: str = None, model_name: str = "gpt-3.5-turbo", temperature: float = 0.7):
@@ -119,10 +132,13 @@ def get_rag_response(query_text: str, user_id: str = None, model_name: str = "gp
     cache_results = cache_store.similarity_search_with_score(query_text, k=1)
     if cache_results and cache_results[0][1] > 0.95: # High similarity threshold
         doc = cache_results[0][0]
-        response = doc.page_content # In MongoDBAtlasVectorSearch, page_content is the text
-        # If response was stored in metadata instead:
-        if not response or response == query_text:
-            response = doc.metadata.get("response")
+        # In MongoDBAtlasVectorSearch, page_content is the 'query' field as per line 116
+        # We must retrieve the actual 'response' from metadata
+        response = doc.metadata.get("response")
+        
+        # If response was missing from metadata, fall back to what we have
+        if not response:
+            response = "I have a cached match, but the response is missing. Please try asking again."
             
         latency = time.time() - start_time
         # Try to get _id from metadata or query again
@@ -152,8 +168,9 @@ def get_rag_response(query_text: str, user_id: str = None, model_name: str = "gp
             qa_chain = RetrievalQA.from_chain_type(
                 llm=llm,
                 chain_type="stuff",
-                retriever=vector_store.as_retriever(),
-                return_source_documents=True
+                retriever=vector_store.as_retriever(search_kwargs={"k": 3}), # Optimized k from 4 to 3
+                return_source_documents=True,
+                chain_type_kwargs={"prompt": QA_CHAIN_PROMPT}
             )
             rag_result = qa_chain.invoke({"query": query_text})
             response = rag_result["result"]
@@ -164,8 +181,9 @@ def get_rag_response(query_text: str, user_id: str = None, model_name: str = "gp
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=vector_store.as_retriever(),
-            return_source_documents=True
+            retriever=vector_store.as_retriever(search_kwargs={"k": 3}), # Optimized k from 4 to 3
+            return_source_documents=True,
+            chain_type_kwargs={"prompt": QA_CHAIN_PROMPT}
         )
         rag_result = qa_chain.invoke({"query": query_text})
         response = rag_result["result"]

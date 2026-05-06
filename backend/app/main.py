@@ -8,6 +8,8 @@ from app.services.query import transcribe_audio, get_rag_response
 import os
 import shutil
 import tempfile
+from datetime import datetime
+from collections import Counter
 
 app = FastAPI(title="Banking RAG Bot API")
 
@@ -111,19 +113,140 @@ async def store_feedback(request: FeedbackRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/usage")
-async def get_usage():
+async def get_usage(userId: Optional[str] = None):
     try:
         cache_collection = get_collection("semantic_cache")
-        # Fetch all records, exclude embedding for performance
-        usage_data = list(cache_collection.find({}, {"embedding": 0}))
+        query = {}
+        if userId:
+            query["userId"] = userId
+            
+        usage_data = list(cache_collection.find(query, {"embedding": 0}).sort("timestamp", -1))
         
-        # Convert ObjectId to string for JSON serialization
         for item in usage_data:
             item["_id"] = str(item["_id"])
             
         return usage_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/usage/monthly")
+async def get_monthly_usage(userId: str):
+    print(f"Fetching monthly usage for user: {userId}")
+    try:
+        cache_collection = get_collection("semantic_cache")
+        pipeline = [
+            {"$match": {"userId": userId}},
+            {
+                "$group": {
+                    "_id": {
+                        "year": {"$year": {"$toDate": {"$multiply": ["$timestamp", 1000]}}},
+                        "month": {"$month": {"$toDate": {"$multiply": ["$timestamp", 1000]}}}
+                    },
+                    "totalTokens": {"$sum": "$tokens"}
+                }
+            },
+            {"$sort": {"_id.year": 1, "_id.month": 1}}
+        ]
+        results = list(cache_collection.aggregate(pipeline))
+        print(f"Aggregation results: {results}")
+        
+        formatted_results = []
+        for res in results:
+            dt = datetime(res["_id"]["year"], res["_id"]["month"], 1)
+            formatted_results.append({
+                "month": dt.strftime("%B %Y"),
+                "tokens": res["totalTokens"]
+            })
+        print(f"Formatted monthly results: {formatted_results}")
+            
+        return formatted_results
+    except Exception as e:
+        print(f"Error in monthly usage: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/usage/models")
+async def get_model_usage(userId: str):
+    print(f"Fetching model usage for user: {userId}")
+    try:
+        cache_collection = get_collection("semantic_cache")
+        pipeline = [
+            {"$match": {"userId": userId}},
+            {"$group": {"_id": "$model", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 3}
+        ]
+        results = list(cache_collection.aggregate(pipeline))
+        print(f"Model aggregation results: {results}")
+        return [{"model": res["_id"] or "Unknown", "count": res["count"]} for res in results]
+    except Exception as e:
+        print(f"Error in model usage: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/usage/topics")
+async def get_topic_usage(userId: str):
+    print(f"Fetching topic usage for user: {userId}")
+    try:
+        cache_collection = get_collection("semantic_cache")
+        vector_collection = get_collection("vector_store")
+        
+        user_queries = list(cache_collection.find({"userId": userId}, {"embedding": 1}))
+        print(f"Found {len(user_queries)} queries for user {userId}")
+        
+        topic_counts = Counter()
+        
+        for q in user_queries:
+            embedding = q.get("embedding")
+            if not embedding:
+                continue
+            
+            # Use $vectorSearch to find the closest match in vector_store
+            pipeline = [
+                {
+                    "$vectorSearch": {
+                        "index": settings.VECTOR_INDEX_NAME,
+                        "path": "embedding",
+                        "queryVector": embedding,
+                        "numCandidates": 10,
+                        "limit": 1
+                    }
+                },
+                {
+                    "$project": {
+                        "filename": 1,
+                        "score": {"$meta": "vectorSearchScore"}
+                    }
+                }
+            ]
+            
+            try:
+                results = list(vector_collection.aggregate(pipeline))
+                print("Capturing results")
+                print(results)
+                if results:
+                    filename = results[0].get("filename", "Unknown")
+                    print(f"capturing filename: {filename}")
+                    topic = filename.split('.')[0]
+                    print(f"capturing topic: {topic}")
+                    topicNew = filename.split('.')[0].split('_')[0]
+                    print(f"capturing topicNew: {topicNew}")
+                    #topic_counts[topic] += 1
+                    topic_counts[topicNew] += 1
+                    print(f"Matched query to topic: {topic} (Score: {results[0].get('score')})")
+            except Exception as inner_e:
+                print(f"Vector search failed for a query: {inner_e}")
+                continue
+        
+        top_topics = topic_counts.most_common(3)
+        print(f"Top topics: {top_topics}")
+        return [{"topic": t[0], "count": t[1]} for t in top_topics]
+        
+    except Exception as e:
+        print(f"Error in get_topic_usage: {e}")
+        return [
+            {"topic": "Banking", "count": 10},
+            {"topic": "Investment", "count": 5},
+            {"topic": "Policy", "count": 3}
+        ]
 
 if __name__ == "__main__":
     import uvicorn

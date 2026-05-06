@@ -220,24 +220,24 @@ async def get_topic_usage(userId: str):
             
             try:
                 results = list(vector_collection.aggregate(pipeline))
-                print("Capturing results")
-                print(results)
+                #print("Capturing results")
+                #print(results)
                 if results:
                     filename = results[0].get("filename", "Unknown")
-                    print(f"capturing filename: {filename}")
+                    #print(f"capturing filename: {filename}")
                     topic = filename.split('.')[0]
-                    print(f"capturing topic: {topic}")
+                    #print(f"capturing topic: {topic}")
                     topicNew = filename.split('.')[0].split('_')[0]
-                    print(f"capturing topicNew: {topicNew}")
+                    #print(f"capturing topicNew: {topicNew}")
                     #topic_counts[topic] += 1
                     topic_counts[topicNew] += 1
-                    print(f"Matched query to topic: {topic} (Score: {results[0].get('score')})")
+                    #print(f"Matched query to topic: {topic} (Score: {results[0].get('score')})")
             except Exception as inner_e:
                 print(f"Vector search failed for a query: {inner_e}")
                 continue
         
         top_topics = topic_counts.most_common(3)
-        print(f"Top topics: {top_topics}")
+        #print(f"Top topics: {top_topics}")
         return [{"topic": t[0], "count": t[1]} for t in top_topics]
         
     except Exception as e:

@@ -191,14 +191,14 @@ export default function TrackerPage() {
                           <td className="px-6 py-4 text-sm text-slate-300">
                             {item.model}
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-300">
+                          <td className="px-6 py-4 text-sm text-slate-300 text-center">
                             {item.temperature}
                           </td>
-                          <td className="px-6 py-4 text-sm font-bold text-right text-indigo-400">
+                          <td className="px-6 py-4 text-sm font-bold text-center text-indigo-400">
                             {item.tokens.toLocaleString()}
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-300">
-                            {item.latency}
+                          <td className="px-6 py-4 text-sm text-slate-300 text-center">
+                            {item.latency?.toFixed(2)}s
                           </td>
                           <td className="px-6 py-4 text-sm text-center">
                             <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${item.feedback === 'Positive' ? 'bg-emerald-500/10 text-emerald-400' : item.feedback === 'Negative' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-800 text-slate-500'}`}>

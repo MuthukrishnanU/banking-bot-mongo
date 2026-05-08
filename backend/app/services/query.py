@@ -87,8 +87,8 @@ def estimate_tokens(text: str) -> int:
 def count_tokens_for_rag(query_text: str, context_docs: list, response_text: str) -> int:
     """Estimate total tokens (prompt + completion) for a RAG call."""
     # Build an approximation of the full prompt: query + retrieved context
-    context_text = "\n".join(context_docs)
-    prompt_text = f"{query_text}\n{context_text}"
+    #context_text = "\n".join(context_docs)
+    prompt_text = f"{query_text}\n"
     prompt_tokens = estimate_tokens(prompt_text)
     completion_tokens = estimate_tokens(response_text)
     return prompt_tokens + completion_tokens

@@ -250,3 +250,29 @@ def log_metrics(query, response, sources, latency, metrics=None, tokens=0, cache
         "timestamp": time.time()
     }
     collection.insert_one(log_entry)
+
+def get_user_persona(queries: list[str]) -> list[str]:
+    """Analyze a list of user queries using LLM to determine top 3 interests."""
+    if not queries:
+        return ["Banking", "Finance", "General"]
+    
+    # Use gpt-3.5-turbo for this task as it's fast and reliable for simple categorization
+    llm = get_llm("gpt-3.5-turbo", temperature=0.3)
+    
+    queries_text = "\n".join(queries[:100]) # Limit to 100 queries
+    
+    prompt = f"""Based on the following list of banking/financial user queries, identify the top 3 most prevalent interests, topics, or categories that describe this user's persona.
+Return ONLY a comma-separated list of 3 topics. Do not include numbering or any other text.
+
+Queries:
+{queries_text}
+
+Top 3 Interests:"""
+    
+    try:
+        response = llm.invoke(prompt)
+        interests = [i.strip() for i in response.content.split(',')]
+        return interests[:3]
+    except Exception as e:
+        print(f"Error generating persona: {e}")
+        return ["Banking", "Finance", "General"]

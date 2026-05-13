@@ -67,6 +67,7 @@ export default function TrackerPage() {
   const [monthlyUsage, setMonthlyUsage] = useState<MonthlyData[]>([]);
   const [modelUsage, setModelUsage] = useState<ModelData[]>([]);
   const [topicUsage, setTopicUsage] = useState<TopicData[]>([]);
+  const [persona, setPersona] = useState<string[]>([]);
 
   // Caching mechanism
   const [loadedTabs, setLoadedTabs] = useState<Set<TabType>>(new Set());
@@ -111,6 +112,14 @@ export default function TrackerPage() {
           endpoint = `${API_BASE_URL}/usage/topics?userId=${userId}`;
           const resTopics = await axios.get(endpoint);
           setTopicUsage(resTopics.data);
+          
+          // Also fetch Persona
+          try {
+            const resPersona = await axios.get(`${API_BASE_URL}/usage/persona?userId=${userId}`);
+            setPersona(resPersona.data);
+          } catch (pErr) {
+            console.error("Error fetching persona:", pErr);
+          }
           break;
       }
       setLoadedTabs(prev => new Set(prev).add(tab));
@@ -293,41 +302,80 @@ export default function TrackerPage() {
 
       case "topics":
         return (
-          <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">Most Queried Topic</h3>
-                <p className="text-slate-400">The core topics analyzed from your document queries</p>
+          <div className="max-w-6xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Existing Topic Chart */}
+              <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-2">Most Queried Topic</h3>
+                  <p className="text-slate-400">The core topics analyzed from your document queries</p>
+                </div>
+
+                <div className="h-[350px] w-full">
+                  {topicUsage.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={topicUsage}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={70}
+                          outerRadius={120}
+                          paddingAngle={5}
+                          dataKey="count"
+                          nameKey="topic"
+                        >
+                          {topicUsage.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
+                          itemStyle={{ color: '#fff' }}
+                        />
+                        <Legend verticalAlign="bottom" height={36} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-slate-500 italic">No topic usage data available</div>
+                  )}
+                </div>
               </div>
 
-              <div className="h-[400px] w-full">
-                {topicUsage.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={topicUsage}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={80}
-                        outerRadius={140}
-                        paddingAngle={5}
-                        dataKey="count"
-                        nameKey="topic"
+              {/* New Persona Section */}
+              <div className="bg-slate-900/50 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl flex flex-col">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-2">AI-Driven Persona</h3>
+                  <p className="text-slate-400">Interests derived from your historical queries by LLM</p>
+                </div>
+
+                <div className="flex-1 flex flex-col justify-center space-y-6">
+                  {persona.length > 0 ? (
+                    persona.map((interest, idx) => (
+                      <div 
+                        key={idx}
+                        className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center gap-4 group hover:bg-indigo-500/10 hover:border-indigo-500/20 transition-all duration-300"
                       >
-                        {topicUsage.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
-                        itemStyle={{ color: '#fff' }}
-                      />
-                      <Legend verticalAlign="bottom" height={36} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-slate-500 italic">No topic usage data available</div>
-                )}
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl ${
+                          idx === 0 ? 'bg-indigo-500 text-white' : 
+                          idx === 1 ? 'bg-violet-500 text-white' : 
+                          'bg-emerald-500 text-white'
+                        }`}>
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Interest {idx + 1}</p>
+                          <p className="text-xl font-bold text-white group-hover:text-indigo-300 transition-colors">{interest}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-slate-500 italic">
+                      <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                      <p>Synthesizing your persona...</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

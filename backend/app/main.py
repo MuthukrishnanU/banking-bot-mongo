@@ -4,7 +4,7 @@ from typing import List, Optional
 from app.core.config import settings
 from app.core.db import get_collection
 from app.services.ingestion import ingest_file
-from app.services.query import transcribe_audio, get_rag_response
+from app.services.query import transcribe_audio, get_rag_response, get_user_persona
 import os
 import shutil
 import tempfile
@@ -247,6 +247,24 @@ async def get_topic_usage(userId: str):
             {"topic": "Investment", "count": 5},
             {"topic": "Policy", "count": 3}
         ]
+
+@app.get("/usage/persona")
+async def get_persona(userId: str):
+    print(f"Generating persona for user: {userId}")
+    try:
+        cache_collection = get_collection("semantic_cache")
+        # Fetch queries for the user
+        user_queries = list(cache_collection.find({"userId": userId}, {"query": 1}).sort("timestamp", -1).limit(100))
+        query_texts = [q["query"] for q in user_queries if "query" in q]
+        
+        if not query_texts:
+            return ["No queries found"]
+            
+        persona = get_user_persona(query_texts)
+        return persona
+    except Exception as e:
+        print(f"Error in get_persona: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

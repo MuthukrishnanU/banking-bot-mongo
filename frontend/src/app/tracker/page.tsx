@@ -23,7 +23,8 @@ import {
   ResponsiveContainer
 } from "recharts";
 
-const API_BASE_URL = "http://localhost:8000";
+//const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "https://banking-bot-mongo.onrender.com";
 
 interface UsageData {
   _id: string;
@@ -112,7 +113,7 @@ export default function TrackerPage() {
           endpoint = `${API_BASE_URL}/usage/topics?userId=${userId}`;
           const resTopics = await axios.get(endpoint);
           setTopicUsage(resTopics.data);
-          
+
           // Also fetch Persona
           try {
             const resPersona = await axios.get(`${API_BASE_URL}/usage/persona?userId=${userId}`);
@@ -352,15 +353,14 @@ export default function TrackerPage() {
                 <div className="flex-1 flex flex-col justify-center space-y-6">
                   {persona.length > 0 ? (
                     persona.map((interest, idx) => (
-                      <div 
+                      <div
                         key={idx}
                         className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center gap-4 group hover:bg-indigo-500/10 hover:border-indigo-500/20 transition-all duration-300"
                       >
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl ${
-                          idx === 0 ? 'bg-indigo-500 text-white' : 
-                          idx === 1 ? 'bg-violet-500 text-white' : 
-                          'bg-emerald-500 text-white'
-                        }`}>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xl ${idx === 0 ? 'bg-indigo-500 text-white' :
+                          idx === 1 ? 'bg-violet-500 text-white' :
+                            'bg-emerald-500 text-white'
+                          }`}>
                           {idx + 1}
                         </div>
                         <div>

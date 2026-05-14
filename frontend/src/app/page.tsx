@@ -22,7 +22,8 @@ import {
 import axios from "axios";
 
 // Constants
-const API_BASE_URL = "http://localhost:8000";
+//const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "https://banking-bot-mongo.onrender.com";
 
 const LLM_MODELS = [
   { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },

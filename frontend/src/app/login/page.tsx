@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Shield, Lock, User, Loader2, AlertCircle } from "lucide-react";
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:8000";
+//const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "https://banking-bot-mongo.onrender.com";
 
 export default function LoginPage() {
   const router = useRouter();
